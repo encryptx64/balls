@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Physique 2D</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+<canvas id="simulationCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('simulationCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Ball {
+        constructor(x, y, radius) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = this.randomColor();
+            this.vx = Math.random() * 2 - 1;
+            this.vy = Math.random() * 2 - 1;
+            this.gravity = 0.1;
+            this.friction = 0.99;
+        }
+
+        randomColor() {
+            const r = Math.floor(Math.random() * 255);
+            const g = Math.floor(Math.random() * 255);
+            const b = Math.floor(Math.random() * 255);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        update(balls) {
+            if (this.y + this.radius + this.vy > canvas.height) {
+                this.vy = -this.vy * this.friction;
+            } else {
+                this.vy += this.gravity;
+            }
+
+            if (this.x + this.radius + this.vx > canvas.width || this.x - this.radius <= 0) {
+                this.vx = -this.vx * this.friction;
+            }
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Check for collisions with other balls
+            for (let i = 0; i < balls.length; i++) {
+                if (this === balls[i]) continue;
+                const dx = this.x - balls[i].x;
+                const dy = this.y - balls[i].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < this.radius + balls[i].radius) {
+                    this.vx = -this.vx;
+                    this.vy = -this.vy;
+                    balls[i].vx = -balls[i].vx;
+                    balls[i].vy = -balls[i].vy;
+                }
+            }
+
+            this.draw();
+        }
+    }
+
+    const balls = [];
+    let mouseDown = false;
+
+    canvas.addEventListener('mousedown', () => {
+        mouseDown = true;
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        mouseDown = false;
+    });
+
+    canvas.addEventListener('mousemove', (event) => {
+        if (mouseDown) {
+            const radius = 10;
+            const ball = new Ball(event.clientX, event.clientY, radius);
+            balls.push(ball);
+        }
+    });
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        balls.forEach(ball => ball.update(balls));
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
